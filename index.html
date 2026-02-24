@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TailHappyTV E-Bike Explorer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Hide scrollbar for the modal to keep it clean */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Make sure the modal background doesn't allow scrolling behind it */
+        body.modal-open {
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-neutral-900 text-neutral-100 font-sans selection:bg-orange-500 selection:text-white">
+
+    <!-- Header -->
+    <header class="bg-neutral-950 border-b border-neutral-800 sticky top-0 z-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
+                        <i data-lucide="bike" class="text-orange-500 w-8 h-8"></i>
+                        TailHappyTV E-Bike Explorer
+                    </h1>
+                    <p class="text-sm text-neutral-400 mt-1">
+                        Browse the top-reviewed electric bikes from the last year.
+                    </p>
+                </div>
+                
+                <!-- Search Bar -->
+                <div class="relative w-full md:w-72">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i data-lucide="search" class="h-5 w-5 text-neutral-500"></i>
+                    </div>
+                    <input
+                        type="text"
+                        id="searchInput"
+                        placeholder="Search bikes or brands..."
+                        class="block w-full pl-10 pr-3 py-2 border border-neutral-700 rounded-lg leading-5 bg-neutral-800 text-neutral-300 placeholder-neutral-500 focus:outline-none focus:bg-neutral-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 sm:text-sm transition-colors"
+                    />
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="mt-6 flex flex-col sm:flex-row gap-4">
+                <div class="flex flex-col gap-1 w-full sm:w-auto">
+                    <label class="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Style / Category</label>
+                    <select id="categoryFilter" class="bg-neutral-800 border border-neutral-700 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5 outline-none">
+                        <!-- Options populated by JS -->
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1 w-full sm:w-auto">
+                    <label class="text-xs font-semibold text-neutral-500 uppercase tracking-wider">Rider Profile</label>
+                    <select id="riderFilter" class="bg-neutral-800 border border-neutral-700 text-sm rounded-lg focus:ring-orange-500 focus:border-orange-500 block w-full p-2.5 outline-none">
+                        <!-- Options populated by JS -->
+                    </select>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Results Counter -->
+        <div class="mb-6">
+            <p id="resultCount" class="text-neutral-400">Showing 0 e-bikes</p>
+        </div>
+
+        <!-- Grid Container -->
+        <div id="bikeGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Cards populated by JS -->
+        </div>
+
+        <!-- Empty State Container -->
+        <div id="emptyState" class="text-center py-20 hidden">
+            <i data-lucide="shield-check" class="w-16 h-16 text-neutral-700 mx-auto mb-4"></i>
+            <h3 class="text-xl font-bold text-neutral-300">No bikes found</h3>
+            <p class="text-neutral-500 mt-2">Try adjusting your filters or search term.</p>
+            <button id="clearFiltersBtn" class="mt-6 px-4 py-2 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-sm font-medium transition-colors">
+                Clear Filters
+            </button>
+        </div>
+    </main>
+
+    <!-- Modal Container -->
+    <div id="modalContainer" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 hidden">
+        <!-- Backdrop -->
+        <div id="modalBackdrop" class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity cursor-pointer"></div>
+        
+        <!-- Modal Content (Populated by JS) -->
+        <div id="modalContent" class="relative bg-neutral-900 border border-neutral-700 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto no-scrollbar shadow-2xl flex flex-col z-10">
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // --- DATABASE ---
+        // Note: Replace the "youtubeId" with the actual 11-character video ID from TailHappyTV's specific review videos.
+        const BIKE_DATA = [
+            {
+                id: 1, name: "Wired Scout", brand: "Wired", category: "Hyper-Ebike", topSpeed: 53,
+                power: "72V High-Torque Hub", battery: "Up to 100Ah (Dual Setup)", priceEst: "$2,000+",
+                overview: "An absolute beast that looks like a standard fat-tire e-bike but rides like a light motorcycle. It features an incredibly high-torque hub motor capable of lifting the front wheel off the ground under full throttle.",
+                pros: ["Insane torque & acceleration", "Massive battery potential", "Pinnacle of performance"],
+                cons: ["Very heavy (140+ lbs with dual batteries)", "Torque sensor is a bit jerky", "Loud motor"],
+                riderType: "Adrenaline Junkie", recommendation: "Perfect for extreme thrill-seekers and off-road riders who want motorcycle-level power in a bicycle frame. Not recommended for beginners.", color: "from-red-600 to-orange-500",
+                youtubeId: "FKsD2WU5Ivk" 
+            },
+            {
+                id: 2, name: "Magician Alpha", brand: "Magician", category: "Hyper-Ebike", topSpeed: 50,
+                power: "Hentach Hub Motor", battery: "High Capacity 60V+", priceEst: "$2,500+",
+                overview: "A massive, highly powerful e-bike utilizing straight-cut steel gears. It offers a refined ride thanks to the Bafang controller, display, and torque sensor ecosystem. Designed for high top-end speed.",
+                pros: ["Refined Bafang ecosystem", "High top speed", "Future-proof parts availability"],
+                cons: ["Very large and heavy", "Straight-cut gears make it loud"],
+                riderType: "Speed Cruiser", recommendation: "Best for riders who want massive top-end speed but appreciate the smooth power delivery and reliability of a Bafang-tuned system.", color: "from-blue-600 to-indigo-600",
+                youtubeId: "ngBjuyAIrhc"
+            },
+            {
+                id: 3, name: "Wired Freedom", brand: "Wired", category: "Hyper-Ebike", topSpeed: 43,
+                power: "60V, 3400W Peak", battery: "60V 20Ah + 15Ah (2100Wh)", priceEst: "$2,000+",
+                overview: "A large, powerful, full-suspension e-bike featuring an upright BMX-style riding geometry. It ships quick and provides an excellent value for the sheer amount of power and battery capacity included.",
+                pros: ["Great value for the power", "Dual battery setup standard", "Comfortable upright geometry"],
+                cons: ["Can be too large for shorter riders", "Heavy"],
+                riderType: "Tall Power-Seeker", recommendation: "Ideal for taller or larger riders who want a comfortable, upright cruiser that can still break 40 mph effortlessly.", color: "from-green-500 to-emerald-700",
+                youtubeId: "xE8zf_6VW0U"
+            },
+            {
+                id: 4, name: "The Mini Goat", brand: "Goat Power Bikes", category: "Moped Style", topSpeed: 50,
+                power: "Direct Drive Hub", battery: "60V High Capacity", priceEst: "$1,800+",
+                overview: "A silent 'pocket rocket' moped-style e-bike. It brings massive power at a price point that undercuts major premium brands. The direct-drive motor is completely silent on the streets.",
+                pros: ["Incredible power-to-dollar ratio", "Silent direct-drive motor", "Great for shorter riders"],
+                cons: ["Pedals are mostly for show", "Not ideal for tall riders"],
+                riderType: "Street Thrill-Seeker", recommendation: "Excellent for shorter riders or anyone who wants a fast, silent moped-style bike for street cruising without paying premium 'Super73' prices.", color: "from-purple-500 to-pink-600",
+                youtubeId: "gAgwn-ASNg0"
+            },
+            {
+                id: 5, name: "Velotric Discover 2", brand: "Velotric", category: "Commuter", topSpeed: 28,
+                power: "750W Hub Motor", battery: "48V 14.7Ah", priceEst: "$1,600",
+                overview: "A highly refined, polished commuter e-bike from an established brand. It features a great torque sensor, beautiful paint jobs, and integrated tech like Apple Find My.",
+                pros: ["Extremely refined and smooth", "Great torque sensor", "High-quality build and paint"],
+                cons: ["Not built for extreme off-roading", "Speed capped at Class 3 limits"],
+                riderType: "Daily Commuter", recommendation: "The perfect everyday bike for commuters and casual riders who prioritize safety, smooth pedaling, and aesthetic refinement over raw, illegal speeds.", color: "from-yellow-400 to-orange-400",
+                youtubeId: "cZEXDqhdT9M"
+            },
+            {
+                id: 6, name: "Lectric Xpress 750", brand: "Lectric", category: "Commuter", topSpeed: 28,
+                power: "750W Hub Motor", battery: "48V 14Ah", priceEst: "$1,299",
+                overview: "A traditional bicycle-style e-bike featuring a torque sensor and a 750W motor. It's relatively lightweight compared to fat-tire bikes and offers an excellent value.",
+                pros: ["Traditional bike feel", "Affordable", "Backed by a massive company"],
+                cons: ["Thinner tires aren't great for sand/snow", "Basic suspension"],
+                riderType: "Budget Commuter", recommendation: "Great for riders who want an affordable, traditional-feeling bicycle for paved trails and city commuting.", color: "from-cyan-500 to-blue-500",
+                youtubeId: "srGPfI-Lat0"
+            },
+            {
+                id: 7, name: "Magician Atlas", brand: "Magician", category: "Off-Road / Trail", topSpeed: 35,
+                power: "High-Torque Mid-Drive", battery: "48V/52V High Capacity", priceEst: "$2,200+",
+                overview: "A mid-drive fat-tire e-bike that excels at off-roading and hill climbing. The mid-drive setup reduces unsprung mass on the rear wheel, providing more effective torque for steep inclines.",
+                pros: ["Incredible hill-climbing ability", "Better weight distribution", "High-quality suspension"],
+                cons: ["Requires more maintenance (chain/gears)", "More expensive than hub variants"],
+                riderType: "Trail Explorer", recommendation: "The top choice for hunters, trail riders, and anyone who lives in highly mountainous areas where a hub motor would overheat.", color: "from-stone-500 to-stone-700",
+                youtubeId: "jJ480unikbs"
+            },
+            {
+                id: 8, name: "E-Cells Kings Crown", brand: "E-Cells", category: "Fat Tire/AWD", topSpeed: 35,
+                power: "Dual Motor AWD", battery: "Massive Dual Battery", priceEst: "$3,000+",
+                overview: "An absolute off-road monster. It features all-wheel drive via dual motors, making it practically unstoppable in sand, snow, or mud. Very heavy, but incredibly capable.",
+                pros: ["Unstoppable in bad terrain", "Massive range", "Premium components"],
+                cons: ["Very expensive", "Incredibly heavy to transport"],
+                riderType: "Off-Grid Adventurer", recommendation: "Ideal for heavy riders, overlanders, or anyone who needs to conquer soft sand, deep snow, or steep, loose trails.", color: "from-amber-600 to-orange-700",
+                youtubeId: "Ckyz487dGCI"
+            },
+            {
+                id: 9, name: "The Billy Goat", brand: "Goat Power Bikes", category: "Moped Style", topSpeed: 48,
+                power: "High-Speed Hub", battery: "60V System", priceEst: "$2,000+",
+                overview: "A larger moped-style bike compared to the Mini Goat. It offers excellent ground clearance, making it much better suited for off-road trails and jumping curbs.",
+                pros: ["Great ground clearance", "Aggressive off-road styling", "Fast top speed"],
+                cons: ["Seat isn't as comfortable as the Motor Goat", "Tall standover height"],
+                riderType: "Scrambler Fan", recommendation: "Best for riders who love the moped look but actually want to take the bike on dirt trails and rough terrain.", color: "from-red-800 to-black",
+                youtubeId: "_lBBGiFR3BI"
+            },
+            {
+                id: 10, name: "Velotric Nomad 2", brand: "Velotric", category: "Fat Tire", topSpeed: 28,
+                power: "750W Hub Motor", battery: "48V 14.4Ah", priceEst: "$1,799",
+                overview: "A refined and polished fat-tire e-bike. It rides like a comfortable electric bicycle, not an electric motorcycle. Strong, but not dangerously powerful.",
+                pros: ["Excellent build quality", "Very comfortable ride", "Water-resistant components"],
+                cons: ["Heavy for a Class 3 bike", "Not as fast as the 'hyper' category"],
+                riderType: "Comfort Cruiser", recommendation: "Perfect for older riders or casual cruisers who want the stability of fat tires but the safety and refinement of a strictly street-legal class 3 bike.", color: "from-teal-500 to-cyan-600",
+                youtubeId: "vHgDnGhClwE"
+            },
+            {
+                id: 11, name: "Lectric XP Lite 2.0", brand: "Lectric", category: "Folding/Compact", topSpeed: 20,
+                power: "300W (Peak 719W) Hub", battery: "48V 7.8Ah", priceEst: "$899",
+                overview: "Awarded 'Most Affordable' by many reviewers. It's a lightweight, stealthy folding e-bike with a reliable single-speed or gates carbon drive option. Unbeatable value.",
+                pros: ["Incredibly cheap", "Lightweight and easy to lift", "Gates Carbon Drive available"],
+                cons: ["Low top speed", "Small battery / short range"],
+                riderType: "RV Owner / Student", recommendation: "The ultimate choice for college students, RV owners, or anyone with limited storage space on a tight budget.", color: "from-blue-400 to-blue-200",
+                youtubeId: "gAwrB9AnY9k"
+            },
+            {
+                id: 12, name: "Puckipuppy Labrador Pro", brand: "Puckipuppy", category: "Fat Tire", topSpeed: 30,
+                power: "750W Hub Motor", battery: "48V 20Ah", priceEst: "$1,400",
+                overview: "A heavy, advanced full-suspension fat-tire e-bike geared toward riders looking for a comfortable cruiser with a lot of included accessories right out of the box.",
+                pros: ["Tons of accessories included", "Large 20Ah battery", "Comfortable suspension"],
+                cons: ["Generic brand name", "Heavy and somewhat clunky handling"],
+                riderType: "Value Shopper", recommendation: "Good for budget-conscious buyers who want a fully loaded, full-suspension fat tire bike without buying accessories separately.", color: "from-gray-600 to-gray-800",
+                youtubeId: "Mq3eGLyNGd4"
+            }
+        ];
+
+        const CATEGORIES = ["All", "Hyper-Ebike", "Moped Style", "Commuter", "Off-Road / Trail", "Fat Tire", "Fat Tire/AWD", "Folding/Compact"];
+        const RIDER_TYPES = ["All", "Adrenaline Junkie", "Speed Cruiser", "Tall Power-Seeker", "Street Thrill-Seeker", "Daily Commuter", "Budget Commuter", "Trail Explorer", "Off-Grid Adventurer", "Scrambler Fan", "Comfort Cruiser", "RV Owner / Student", "Value Shopper"];
+
+        // State Variables
+        let searchTerm = "";
+        let selectedCategory = "All";
+        let selectedRider = "All";
+
+        // DOM Elements
+        const searchInput = document.getElementById('searchInput');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const riderFilter = document.getElementById('riderFilter');
+        const bikeGrid = document.getElementById('bikeGrid');
+        const emptyState = document.getElementById('emptyState');
+        const resultCount = document.getElementById('resultCount');
+        const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+        const modalContainer = document.getElementById('modalContainer');
+        const modalBackdrop = document.getElementById('modalBackdrop');
+        const modalContent = document.getElementById('modalContent');
+
+        // Initialization
+        function init() {
+            // Populate Dropdowns
+            CATEGORIES.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat;
+                option.textContent = cat;
+                categoryFilter.appendChild(option);
+            });
+
+            RIDER_TYPES.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = type;
+                riderFilter.appendChild(option);
+            });
+
+            // Event Listeners for Filters
+            searchInput.addEventListener('input', (e) => {
+                searchTerm = e.target.value;
+                renderBikes();
+            });
+
+            categoryFilter.addEventListener('change', (e) => {
+                selectedCategory = e.target.value;
+                renderBikes();
+            });
+
+            riderFilter.addEventListener('change', (e) => {
+                selectedRider = e.target.value;
+                renderBikes();
+            });
+
+            clearFiltersBtn.addEventListener('click', clearFilters);
+
+            // Modal Event Listeners
+            modalBackdrop.addEventListener('click', closeModal);
+            
+            // Event delegation for opening modals from dynamically created cards
+            bikeGrid.addEventListener('click', (e) => {
+                const card = e.target.closest('.bike-card');
+                if (card) {
+                    const id = parseInt(card.getAttribute('data-id'));
+                    const bike = BIKE_DATA.find(b => b.id === id);
+                    if(bike) openModal(bike);
+                }
+            });
+
+            // Initial Render
+            renderBikes();
+            // Initialize lucide icons for the static elements
+            lucide.createIcons();
+        }
+
+        function clearFilters() {
+            searchTerm = "";
+            selectedCategory = "All";
+            selectedRider = "All";
+            
+            searchInput.value = "";
+            categoryFilter.value = "All";
+            riderFilter.value = "All";
+            
+            renderBikes();
+        }
+
+        // Render the Grid
+        function renderBikes() {
+            // Filter Logic
+            const filteredBikes = BIKE_DATA.filter(bike => {
+                const matchesSearch = bike.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                      bike.brand.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesCategory = selectedCategory === "All" || bike.category === selectedCategory;
+                const matchesRider = selectedRider === "All" || bike.riderType === selectedRider;
+                
+                return matchesSearch && matchesCategory && matchesRider;
+            });
+
+            // Update Count
+            resultCount.textContent = `Showing ${filteredBikes.length} e-bikes`;
+
+            // Clear Grid
+            bikeGrid.innerHTML = "";
+
+            if (filteredBikes.length > 0) {
+                bikeGrid.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+
+                filteredBikes.forEach(bike => {
+                    const card = document.createElement('div');
+                    card.className = "bike-card bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden hover:border-orange-500/50 hover:shadow-lg hover:shadow-orange-500/10 transition-all duration-200 cursor-pointer group flex flex-col h-full";
+                    card.setAttribute('data-id', bike.id);
+                    
+                    // Uses hqdefault.jpg for grid thumbnails as it loads faster
+                    card.innerHTML = `
+                        <div class="h-44 bg-cover bg-center relative overflow-hidden flex items-center justify-center transition-transform duration-500 group-hover:scale-105" style="background-image: url('https://i.ytimg.com/vi/${bike.youtubeId}/hqdefault.jpg')">
+                            <div class="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors duration-300"></div>
+                            <div class="absolute top-3 right-3 bg-black/60 backdrop-blur-sm px-2 py-1 rounded text-xs font-bold text-white tracking-wider flex items-center gap-1">
+                                <i data-lucide="play-circle" class="w-3 h-3 text-red-500"></i>
+                                ${bike.topSpeed} MPH
+                            </div>
+                        </div>
+                        <div class="p-5 flex-1 flex flex-col bg-neutral-900 relative z-10">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h3 class="text-lg font-bold text-white group-hover:text-orange-400 transition-colors">${bike.name}</h3>
+                                    <p class="text-xs text-neutral-400">${bike.brand}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4 space-y-2 flex-1">
+                                <div class="flex items-center text-sm text-neutral-300">
+                                    <i data-lucide="zap" class="w-4 h-4 mr-2 text-yellow-500"></i>
+                                    <span class="truncate">${bike.power}</span>
+                                </div>
+                                <div class="flex items-center text-sm text-neutral-300">
+                                    <i data-lucide="user" class="w-4 h-4 mr-2 text-blue-400"></i>
+                                    <span class="truncate">${bike.riderType}</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 flex items-center justify-between text-sm font-medium text-orange-500">
+                                <span>View Full Specs</span>
+                                <i data-lucide="chevron-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                            </div>
+                        </div>
+                    `;
+                    bikeGrid.appendChild(card);
+                });
+            } else {
+                bikeGrid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+            }
+
+            // Re-initialize icons for newly created DOM elements
+            lucide.createIcons();
+        }
+
+        // Modal Logic
+        function openModal(bike) {
+            const prosList = bike.pros.map(pro => `
+                <li class="flex items-start text-sm text-neutral-300">
+                    <span class="text-green-500 mr-2 font-bold">✓</span> ${pro}
+                </li>
+            `).join('');
+
+            const consList = bike.cons.map(con => `
+                <li class="flex items-start text-sm text-neutral-300">
+                    <span class="text-red-500 mr-2 font-bold">✕</span> ${con}
+                </li>
+            `).join('');
+
+            // Uses maxresdefault.jpg for the high-quality modal header
+            modalContent.innerHTML = `
+                <!-- Modal Header -->
+                <div class="h-56 sm:h-72 bg-cover bg-center relative shrink-0" style="background-image: url('https://i.ytimg.com/vi/${bike.youtubeId}/maxresdefault.jpg')">
+                    <button onclick="closeModal()" class="absolute top-4 right-4 bg-black/60 hover:bg-black/80 backdrop-blur-md p-2 rounded-full text-white transition-colors z-10">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                    <div class="absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/40 to-black/20"></div>
+                    
+                    <div class="absolute bottom-6 left-6 right-6">
+                        <span class="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded uppercase tracking-wider mb-2 inline-block shadow-lg">
+                            ${bike.category}
+                        </span>
+                        <h2 class="text-3xl sm:text-4xl font-extrabold text-white drop-shadow-md">${bike.name}</h2>
+                        <p class="text-neutral-200 font-medium drop-shadow">${bike.brand}</p>
+                    </div>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="p-6 sm:p-8 flex-1">
+                    
+                    <!-- Quick Specs -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                        <div class="bg-neutral-800 p-4 rounded-xl border border-neutral-700/50 text-center">
+                            <i data-lucide="gauge" class="w-6 h-6 text-orange-500 mx-auto mb-2"></i>
+                            <p class="text-xs text-neutral-400 uppercase tracking-wider">Top Speed</p>
+                            <p class="font-bold text-lg">${bike.topSpeed} MPH</p>
+                        </div>
+                        <div class="bg-neutral-800 p-4 rounded-xl border border-neutral-700/50 text-center flex flex-col justify-center">
+                            <i data-lucide="zap" class="w-6 h-6 text-yellow-500 mx-auto mb-2"></i>
+                            <p class="text-xs text-neutral-400 uppercase tracking-wider">Power</p>
+                            <p class="font-bold text-sm truncate px-1" title="${bike.power}">${bike.power}</p>
+                        </div>
+                        <div class="bg-neutral-800 p-4 rounded-xl border border-neutral-700/50 text-center flex flex-col justify-center">
+                            <i data-lucide="battery" class="w-6 h-6 text-green-500 mx-auto mb-2"></i>
+                            <p class="text-xs text-neutral-400 uppercase tracking-wider">Battery</p>
+                            <p class="font-bold text-sm truncate px-1" title="${bike.battery}">${bike.battery}</p>
+                        </div>
+                        <div class="bg-neutral-800 p-4 rounded-xl border border-neutral-700/50 text-center flex flex-col justify-center">
+                            <i data-lucide="user" class="w-6 h-6 text-blue-400 mx-auto mb-2"></i>
+                            <p class="text-xs text-neutral-400 uppercase tracking-wider">Rider</p>
+                            <p class="font-bold text-sm truncate px-1" title="${bike.riderType}">${bike.riderType}</p>
+                        </div>
+                    </div>
+
+                    <!-- Sections -->
+                    <div class="space-y-8">
+                        <section>
+                            <h3 class="text-xl font-bold mb-3 flex items-center text-white">
+                                <i data-lucide="info" class="w-5 h-5 mr-2 text-neutral-400"></i>
+                                Overview
+                            </h3>
+                            <p class="text-neutral-300 leading-relaxed">
+                                ${bike.overview}
+                            </p>
+                        </section>
+
+                        <div class="grid sm:grid-cols-2 gap-6">
+                            <section class="bg-green-950/20 border border-green-900/30 p-5 rounded-xl">
+                                <h3 class="text-lg font-bold mb-3 text-green-400">Pros</h3>
+                                <ul class="space-y-2">
+                                    ${prosList}
+                                </ul>
+                            </section>
+                            
+                            <section class="bg-red-950/20 border border-red-900/30 p-5 rounded-xl">
+                                <h3 class="text-lg font-bold mb-3 text-red-400">Cons</h3>
+                                <ul class="space-y-2">
+                                    ${consList}
+                                </ul>
+                            </section>
+                        </div>
+
+                        <section class="bg-neutral-800/50 p-6 rounded-xl border border-neutral-700">
+                            <h3 class="text-lg font-bold mb-2 text-orange-400">TailHappyTV Recommendation</h3>
+                            <p class="text-neutral-300 italic">
+                                "${bike.recommendation}"
+                            </p>
+                        </section>
+                        
+                        <a href="https://www.youtube.com/watch?v=${bike.youtubeId}" target="_blank" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center transition-colors">
+                            <i data-lucide="youtube" class="w-5 h-5 mr-2"></i>
+                            Watch Full Review on YouTube
+                        </a>
+                    </div>
+                </div>
+            `;
+
+            modalContainer.classList.remove('hidden');
+            document.body.classList.add('modal-open');
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            modalContainer.classList.add('hidden');
+            document.body.classList.remove('modal-open');
+            // Small delay to clear content after animation finishes
+            setTimeout(() => {
+                modalContent.innerHTML = ''; 
+            }, 300);
+        }
+
+        // Run Init when DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', init);
+
+    </script>
+</body>
+</html>
